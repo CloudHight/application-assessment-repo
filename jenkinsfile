@@ -44,18 +44,21 @@ pipeline {
               ssh ${PROD_USER}@${PROD_HOST} '
                 echo "Checking for existing ${REMOTE_APP_NAME} process..."
                 PID=\$(pgrep -f ${REMOTE_APP_NAME} || true)
+            
                 if [ ! -z "\$PID" ]; then
                   echo "Stopping existing app (PID: \$PID)..."
                   kill -9 \$PID || true
                   sleep 2
-                else
-                  echo "No existing app running."
+                  echo "Old process terminated. Starting new one..."
+                  cd ${REMOTE_APP_PATH}
+                  nohup java -jar ${REMOTE_APP_NAME} > app.log 2>&1 &
+                  sleep 2
+                elif [ -z "\$PID" ]; then
+                  echo "No existing app running. Starting new one..."
+                  cd ${REMOTE_APP_PATH}
+                  nohup java -jar ${REMOTE_APP_NAME} > app.log 2>&1 &
+                  sleep 2
                 fi
-            
-                echo "Starting new ${REMOTE_APP_NAME} process..."
-                cd ${REMOTE_APP_PATH}
-                nohup java -jar ${REMOTE_APP_NAME} > app.log 2>&1 &
-                sleep 2
               '
             """
           }
