@@ -2,10 +2,9 @@ pipeline {
   agent any
 
   environment {
-    SSH_CREDENTIALS = 'prod-server-key'           // Jenkins SSH credentials ID
-    PROD_HOST = 'prod-server-ip-or-dns-name'      // Replace with actual IP or DNS
-    PROD_USER = 'ubuntu'                          // Change if different
-    REMOTE_APP_NAME = 'app.war'                   // Final name on the server
+    PROD_HOST = 'prod-server-ip'      // Replace with actual IP or DNS
+    PROD_USER = 'ec2-user'                          // Change if different
+    REMOTE_APP_NAME = 'spring-petclinic-2.4.2.war'                   // Final name on the server
     REMOTE_APP_PATH = '/home/ubuntu/deployments'  // Target path on the server
   }
 
@@ -25,7 +24,7 @@ pipeline {
 
     stage('Deploy to Production') {
       steps {
-        sshagent([env.SSH_CREDENTIALS]) {
+        sshagent(['prod-server-key']) {
           script {
             def warFile = sh(script: "ls target/*.war", returnStdout: true).trim()
             def remoteFullPath = "${REMOTE_APP_PATH}/${REMOTE_APP_NAME}"
