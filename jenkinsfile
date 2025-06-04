@@ -42,10 +42,11 @@ pipeline {
             // Check and stop existing process if running
             sh """
               ssh ${PROD_USER}@${PROD_HOST} '
-                PID=\$(pgrep -f "${REMOTE_APP_NAME}") || true
-                if [ ! -z "\$PID" ]; then
+                PID=\$(pgrep -f "${REMOTE_APP_NAME}" || true)
+                if [ -n "\$PID" ]; then
                   echo "Stopping existing app (PID: \$PID)..."
                   kill -9 \$PID
+                  sleep 2
                 else
                   echo "No existing app running."
                 fi
