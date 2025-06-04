@@ -1,0 +1,78 @@
+pipeline {
+  agent any
+
+  environment {
+    SSH_CREDENTIALS = 'prod-server-key'           // Jenkins SSH credentials ID
+    PROD_HOST = 'prod-server-ip-or-dns-name'      // Replace with actual IP or DNS
+    PROD_USER = 'ubuntu'                          // Change if different
+    REMOTE_APP_NAME = 'app.war'                   // Final name on the server
+    REMOTE_APP_PATH = '/home/ubuntu/deployments'  // Target path on the server
+  }
+
+  stages {
+
+    stage('Checkout Code') {
+      steps {
+        checkout scm
+      }
+    }
+
+    stage('Build with Maven') {
+      steps {
+        sh 'mvn clean package'
+      }
+    }
+
+    stage('Deploy to Production') {
+      steps {
+        sshagent([env.SSH_CREDENTIALS]) {
+          script {
+            def warFile = sh(script: "ls target/*.war", returnStdout: true).trim()
+            def remoteFullPath = "${REMOTE_APP_PATH}/${REMOTE_APP_NAME}"
+
+            // Ensure remote deployment directory exists
+            sh """
+              ssh -o StrictHostKeyChecking=no ${PROD_USER}@${PROD_HOST} 'mkdir -p ${REMOTE_APP_PATH}'
+            """
+
+            // Upload WAR file to the remote server
+            sh """
+              scp -o StrictHostKeyChecking=no ${warFile} ${PROD_USER}@${PROD_HOST}:${remoteFullPath}
+            """
+
+            // Check and stop existing process if running
+            sh """
+              ssh ${PROD_USER}@${PROD_HOST} '
+                PID=\$(pgrep -f "${REMOTE_APP_NAME}") || true
+                if [ ! -z "\$PID" ]; then
+                  echo "Stopping existing app (PID: \$PID)..."
+                  kill -9 \$PID
+                else
+                  echo "No existing app running."
+                fi
+              '
+            """
+
+            // Start the app in the background using nohup
+            sh """
+              ssh ${PROD_USER}@${PROD_HOST} '
+                cd ${REMOTE_APP_PATH}
+                nohup java -jar ${REMOTE_APP_NAME} > app.log 2>&1 &
+                sleep 2
+              '
+            """
+          }
+        }
+      }
+    }
+  }
+
+  post {
+    success {
+      echo "Application deployed and started successfully on ${PROD_HOST}!"
+    }
+    failure {
+      echo "Deployment failed."
+    }
+  }
+}
