@@ -2,7 +2,7 @@ pipeline {
   agent any
 
   environment {
-    PROD_HOST = 'prod-server-ip'      // Replace with actual IP or DNS
+    PROD_HOST = credentials('prod-server-ip')      // Replace with actual IP or DNS
     PROD_USER = 'ec2-user'                          // Change if different
     REMOTE_APP_NAME = 'spring-petclinic-2.4.2.war'                   // Final name on the server
     REMOTE_APP_PATH = '/home/ubuntu/deployments'  // Target path on the server
