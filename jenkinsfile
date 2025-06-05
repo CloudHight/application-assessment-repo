@@ -41,12 +41,12 @@ pipeline {
 
             // Check and stop existing process
             sh """
-              ssh -o StrictHostKeyChecking=no ${PROD_USER}@${PROD_HOST} 'sh destroy.sh'
+              ssh -o StrictHostKeyChecking=no ${PROD_USER}@${PROD_HOST} 'sh ~/destroy.sh'
             """
 
             // start the application
             sh """
-              ssh -o StrictHostKeyChecking=no ${PROD_USER}@${PROD_HOST} 'sh start.sh'
+              ssh -o StrictHostKeyChecking=no ${PROD_USER}@${PROD_HOST} 'sh ~/start.sh'
             """
           }
         }
